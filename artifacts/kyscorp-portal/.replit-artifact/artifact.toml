@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Portal KYS CORP"
+description = "Portal institucional público do Grupo KYS CORP, com apresentação institucional, catálogo de empresas, publicações e contactos."
+version = "1.0.0"
+id = "artifacts/kyscorp-portal"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23316
+
+[services.development]
+run = "pnpm --filter @workspace/kyscorp-portal run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/kyscorp-portal", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/kyscorp-portal/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23316"
+BASE_PATH = "/"

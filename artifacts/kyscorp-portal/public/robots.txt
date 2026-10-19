@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://kyscorp.org/sitemap.xml

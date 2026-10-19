@@ -1,0 +1,389 @@
+# PROMPT REPLIT — KYSCORP.ORG
+
+## 1. Visão geral do projeto
+
+Desenvolver um website institucional moderno, profissional e responsivo para o **Grupo KYS CORP LDA**, utilizando Node.js como base tecnológica.
+
+**Domínio previsto:** https://kyscorp.org
+
+O objetivo principal é estabelecer a presença institucional e pública do Grupo KYS CORP, apresentando a organização, as suas empresas, áreas de atuação, estrutura corporativa, filosofia empresarial e informações de interesse público.
+
+Este projeto NÃO é um ERP, sistema administrativo, marketplace ou plataforma de gestão interna.
+
+É exclusivamente um portal institucional corporativo.
+
+A experiência visual deverá transmitir a identidade de um grupo empresarial diversificado, moderno, organizado e com visão internacional.
+
+---
+
+## 2. Stack tecnológica
+
+Utilizar preferencialmente:
+
+- Node.js
+- Next.js com App Router
+- TypeScript
+- Tailwind CSS
+- PostgreSQL com Prisma ORM
+- Framer Motion para animações
+- Lucide React para ícones
+- Sistema de componentes reutilizáveis
+- SEO técnico e metadados dinâmicos
+
+O website deverá ser compatível com o ambiente Replit e preparado para posterior implementação em hospedagem própria.
+
+Implementar arquitetura modular, organizada e escalável.
+
+## 3. Identidade visual
+
+Criar uma identidade institucional premium, inspirada na apresentação visual de grandes grupos empresariais internacionais.
+
+Direção estética:
+
+- Design minimalista e corporativo.
+- Predominância de preto, branco e tons de cinza.
+- Tipografia moderna, como Inter.
+- Espaçamento generoso entre os elementos.
+- Animações discretas e elegantes.
+- Fotografias institucionais de alta qualidade.
+- Layout completamente responsivo.
+- Modo claro e escuro.
+
+Evitar excesso de elementos decorativos, gradientes chamativos e aparência de templates genéricos.
+
+O website deve transmitir seriedade, estabilidade e organização empresarial.
+
+## 4. Estrutura do website
+
+Criar as seguintes páginas:
+
+### 4.1. Página inicial — Home
+
+A página inicial deverá apresentar uma visão geral do Grupo KYS CORP.
+
+Estrutura sugerida:
+
+**Hero Section**
+
+Título principal:
+
+"Grupo KYS CORP"
+
+Subtítulo:
+
+"Um ecossistema empresarial de soluções, inovação e desenvolvimento."
+
+Apresentar dois botões:
+
+- Conhecer o Grupo
+- Explorar as Empresas
+
+Adicionar uma imagem ou composição visual corporativa elegante.
+
+**Secção Sobre o Grupo**
+
+Breve apresentação institucional da KYS CORP, acompanhada de um link para a página completa.
+
+**O Nosso Ecossistema**
+
+Apresentação visual das empresas integrantes do grupo, organizadas em cartões.
+
+**Áreas de Atuação**
+
+Demonstrar a diversidade de setores em que o grupo desenvolve atividades.
+
+**Visão Institucional**
+
+Apresentar os princípios gerais, a visão de desenvolvimento e a orientação estratégica do grupo.
+
+**Últimas Publicações**
+
+Exibir automaticamente as três publicações institucionais mais recentes.
+
+**Rodapé Institucional**
+
+Incluir informações corporativas, navegação, contactos e ligações externas.
+
+### 4.2. Sobre Nós — /sobre
+
+Criar uma página institucional detalhada, contendo:
+
+- Apresentação do Grupo KYS CORP LDA.
+- História da organização.
+- Propósito institucional.
+- Missão.
+- Visão.
+- Valores.
+- Modelo de atuação empresarial.
+- Perspetivas de desenvolvimento.
+
+Criar uma linha cronológica interativa para apresentar os principais acontecimentos e marcos históricos da organização.
+
+Todo o conteúdo histórico deverá ser administrável.
+
+Não inventar datas, conquistas, certificações ou informações empresariais.
+
+### 4.3. Empresas do Grupo — /empresas
+
+Esta será uma das principais páginas do website.
+
+Criar uma apresentação organizada das empresas integrantes do Grupo KYS CORP.
+
+Empresas inicialmente previstas:
+
+1. KYS Digital
+2. KYS Publicidades
+3. KYS Terapias
+4. KYS Loja
+5. KYS Carros
+6. KYS Imobiliária
+7. KYS Media
+8. KYS Sexshop
+
+Cada empresa deverá possuir:
+
+- Logótipo.
+- Nome comercial.
+- Descrição institucional.
+- Setor de atividade.
+- Breve apresentação dos serviços.
+- Estado institucional configurável.
+- Website oficial.
+- Ligação para a página individual dentro do portal.
+
+Criar páginas individuais dinâmicas:
+
+Exemplo:
+
+/empresas/kys-digital
+
+/empresas/kys-media
+
+/empresas/kys-imobiliaria
+
+Cada página deverá apresentar informações institucionais sobre a respetiva empresa.
+
+Adicionar um botão "Visitar Website Oficial", que encaminhe o visitante para o domínio próprio da empresa.
+
+Os endereços deverão ser configuráveis no painel administrativo.
+
+Permitir acrescentar, editar, reorganizar, publicar ou arquivar empresas sem modificar o código-fonte.
+
+### 4.4. Estrutura Corporativa — /estrutura
+
+Criar uma página dedicada à apresentação da estrutura organizacional do grupo.
+
+Deverá incluir:
+
+- Grupo KYS CORP LDA como entidade principal.
+- Empresas integrantes.
+- Relações societárias publicamente divulgadas.
+- Áreas corporativas.
+- Organograma institucional.
+
+Criar um organograma interativo, adaptado para computadores e dispositivos móveis.
+
+As informações sobre participações societárias, percentagens e estrutura de propriedade só deverão ser exibidas quando forem explicitamente cadastradas e autorizadas para publicação.
+
+Não disponibilizar informações administrativas privadas.
+
+### 4.5. Governança — /governanca
+
+Página destinada a apresentar informações sobre a organização e a orientação corporativa do grupo.
+
+Incluir secções configuráveis para:
+
+- Modelo de governança.
+- Administração.
+- Princípios de atuação.
+- Ética empresarial.
+- Transparência institucional.
+- Políticas corporativas.
+- Documentos públicos.
+
+Preparar uma área para disponibilização futura de documentos institucionais em PDF.
+
+### 4.6. Notícias e Publicações — /publicacoes
+
+Criar uma secção editorial para comunicação institucional.
+
+Categorias sugeridas:
+
+- Notícias do Grupo.
+- Comunicados Oficiais.
+- Novas Empresas.
+- Parcerias.
+- Artigos Institucionais.
+- Relatórios Públicos.
+
+Cada publicação deverá possuir título, imagem de destaque, data, autor, categoria, conteúdo e metadados SEO.
+
+Criar sistema de pesquisa, paginação e filtragem por categoria.
+
+### 4.7. Centro de Informação — /informacoes
+
+Esta página será especialmente importante para investigadores, jornalistas, potenciais parceiros e interessados na organização.
+
+Organizar informações públicas sobre o grupo num único local.
+
+Criar as seguintes áreas:
+
+**Ficha Institucional**
+
+- Denominação social.
+- Nome comercial.
+- País de origem.
+- Sede institucional.
+- Setores de atividade.
+- Website oficial.
+- Contactos institucionais.
+
+**Documentação Pública**
+
+Área para documentos, apresentações, relatórios e materiais institucionais.
+
+**Perguntas Frequentes**
+
+Responder a questões gerais sobre a organização, as suas empresas e o respetivo modelo de funcionamento.
+
+**Recursos de Imprensa**
+
+Disponibilizar logótipos autorizados, apresentações e materiais públicos para utilização jornalística ou académica.
+
+Todas as informações deverão ser editáveis através do painel administrativo.
+
+### 4.8. Contactos — /contactos
+
+Criar uma página com:
+
+- Formulário de contacto.
+- Email institucional.
+- Localização da sede, quando cadastrada.
+- Ligações para redes sociais oficiais.
+- Contacto para parcerias.
+- Contacto para imprensa.
+- Contacto para assuntos gerais.
+
+O formulário deverá permitir selecionar o assunto da mensagem.
+
+Implementar validação, proteção antispam e tratamento seguro dos dados submetidos.
+
+---
+
+## 5. Painel administrativo privado
+
+Embora o website seja público e institucional, deverá possuir um painel administrativo reservado para atualização dos conteúdos.
+
+Rota sugerida:
+
+/admin
+
+Implementar autenticação segura e controlo de permissões.
+
+Funcionalidades:
+
+- Dashboard geral.
+- Gestão das empresas.
+- Gestão das páginas institucionais.
+- Gestão de notícias e publicações.
+- Gestão dos documentos públicos.
+- Gestão dos contactos recebidos.
+- Gestão dos elementos visuais.
+- Gestão dos metadados SEO.
+- Configurações gerais do website.
+- Gestão de utilizadores administrativos.
+
+Criar dois níveis iniciais de acesso:
+
+**Super Administrador:** controlo integral do portal.
+
+**Editor:** permissão para criar e editar conteúdos, sem acesso às configurações críticas.
+
+Implementar sistema de rascunhos, publicação e arquivo.
+
+Nenhum conteúdo deverá tornar-se público sem publicação explícita.
+
+## 6. Funcionalidades adicionais
+
+### Internacionalização
+
+Preparar o website para três idiomas:
+
+- Português (idioma principal).
+- Inglês.
+- Francês.
+
+Estruturar as traduções para que possam ser expandidas futuramente.
+
+### SEO institucional
+
+Implementar:
+
+- Sitemap.xml automático.
+- Robots.txt.
+- URLs amigáveis.
+- Metadados Open Graph.
+- Canonical URLs.
+- Dados estruturados Schema.org (Organization).
+- SEO individual para cada empresa.
+- SEO individual para cada publicação.
+
+### Performance e acessibilidade
+
+Garantir:
+
+- Excelente desempenho em dispositivos móveis.
+- Otimização de imagens.
+- Carregamento progressivo.
+- Componentes acessíveis.
+- Navegação por teclado.
+- Contraste adequado.
+- Boas práticas WCAG 2.2 AA.
+- Proteção contra vulnerabilidades comuns.
+
+### Segurança
+
+Implementar:
+
+- Proteção das rotas administrativas.
+- Hash seguro das palavras-passe.
+- Validação dos dados no servidor.
+- Rate limiting.
+- Proteção contra XSS e CSRF.
+- Gestão segura de sessões.
+- Variáveis de ambiente para credenciais.
+- Proteção dos ficheiros privados.
+
+Nunca expor credenciais no frontend.
+
+## 7. Organização do desenvolvimento
+
+Desenvolver o projeto por etapas:
+
+**Fase 1:** Configuração do ambiente Node.js, Next.js, estrutura do projeto e identidade visual.
+
+**Fase 2:** Implementação das páginas institucionais públicas.
+
+**Fase 3:** Desenvolvimento do catálogo de empresas e respetivas páginas individuais.
+
+**Fase 4:** Implementação da base de dados e painel administrativo.
+
+**Fase 5:** Sistema de publicações, documentos e formulários.
+
+**Fase 6:** Internacionalização, SEO, segurança e otimizações.
+
+**Fase 7:** Testes gerais e preparação para publicação no domínio kyscorp.org.
+
+O resultado deverá ser um website funcional e não apenas uma demonstração visual.
+
+Utilizar conteúdos provisórios claramente identificados sempre que ainda não existirem informações oficiais.
+
+Não inventar números financeiros, dados legais, estatísticas empresariais, nomes de administradores ou conquistas institucionais.
+
+## 8. Resultado esperado
+
+Entregar um portal institucional completo, profissional e escalável, capaz de representar publicamente o Grupo KYS CORP LDA.
+
+O KYSCORP.ORG deverá funcionar como a principal fonte oficial de informação pública sobre a organização e o seu ecossistema empresarial.
+
+A arquitetura deverá permitir que novas empresas, publicações, documentos e páginas sejam acrescentados continuamente, sem necessidade de reconstruir o website.
