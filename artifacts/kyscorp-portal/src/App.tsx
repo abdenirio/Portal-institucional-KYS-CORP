@@ -1,5 +1,9 @@
-import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ClerkProvider, SignIn, SignUp, useClerk } from '@clerk/react';
+import { publishableKeyFromHost } from '@clerk/react/internal';
+import { shadcn } from '@clerk/themes';
+import { AdminArea } from '@/pages/admin';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -8,6 +12,11 @@ import {
   ArrowLeft, ArrowRight, ArrowUpRight, Building2, CircleHelp, FileText, Menu, Moon, Search, Sun, X,
 } from 'lucide-react';
 import { Link, Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
+import {
+  getGetPublicCompanyQueryKey, getListPublicationsQueryKey, getGetPublicationsBySlugQueryKey,
+  useListPublicCompanies, useGetPublicCompany, useListPublications,
+  useGetPublicationsBySlug, useCreateContactInquiry,
+} from '@workspace/api-client-react';
 
 const queryClient = new QueryClient();
 const tagline = 'Um ecossistema empresarial de soluções, inovação e desenvolvimento.';
@@ -32,6 +41,13 @@ const navigation = [
   { href: '/contactos', label: 'Contactos' },
 ];
 const pending = 'Informação em atualização';
+const clerkPubKey = publishableKeyFromHost(window.location.hostname, import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
+const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+function stripBase(path: string) {
+  return basePath && path.startsWith(basePath) ? path.slice(basePath.length) || '/' : path;
+}
 
 function usePageMeta(title: string, description: string) {
   useEffect(() => {
@@ -199,18 +215,20 @@ function About() {
 
 function Companies() {
   usePageMeta('Empresas', 'Diretório dos nomes de empresas indicados para o Grupo KYS CORP LDA.');
+  const companiesQuery = useListPublicCompanies();
+  const liveCompanies = companiesQuery.data ?? [];
   const [search, setSearch] = useState('');
   const [letter, setLetter] = useState('Todas');
   const letters = ['Todas', 'A–C', 'D–K', 'L–R', 'S–Z'];
-  const results = useMemo(() => companies.filter((company) => {
-    const cleanName = company.name.replace('KYS ', '');
+  const filtered = liveCompanies.filter((company) => {
+    const cleanName = company.name.replace(/^KYS\s+/i, '');
     const matchesLetter = letter === 'Todas'
       || (letter === 'A–C' && /^[A-C]/i.test(cleanName))
       || (letter === 'D–K' && /^[D-K]/i.test(cleanName))
       || (letter === 'L–R' && /^[L-R]/i.test(cleanName))
       || (letter === 'S–Z' && /^[S-Z]/i.test(cleanName));
     return company.name.toLocaleLowerCase('pt').includes(search.toLocaleLowerCase('pt')) && matchesLetter;
-  }), [search, letter]);
+  });
   return <>
     <PageHero eyebrow="Empresas / diretório" title="Empresas do grupo" lead="Consulte os nomes inicialmente indicados. A inclusão no diretório não representa uma declaração de atividade, estrutura acionista ou perfil operacional." />
     <section className="content-section wrap">
@@ -219,20 +237,24 @@ function Companies() {
         <label style={{ fontSize: 11, color: 'var(--muted-ink)' }} htmlFor="company-filter">Filtrar pelo nome</label>
         <select id="company-filter" className="filter-select" value={letter} onChange={(e) => setLetter(e.target.value)} data-testid="select-company-filter">{letters.map((v) => <option key={v}>{v}</option>)}</select>
       </div>
-      <p style={{ color: 'var(--muted-ink)', fontSize: 11, marginBottom: 16 }} data-testid="text-company-count">{results.length} {results.length === 1 ? 'nome' : 'nomes'} no diretório</p>
-      {results.length ? <div className="directory-grid">{results.map((company, i) => <Link className="directory-card" href={`/empresas/${company.slug}`} key={company.slug} data-testid={`company-card-${company.slug}`}><div className="directory-card-top"><span className="company-index">{String(companies.indexOf(company) + 1).padStart(2, '0')} / 08</span><ArrowUpRight size={17} /></div><div><h2>{company.name}</h2><p>{pending}</p></div></Link>)}</div> : <div className="empty-state" data-testid="empty-company-results">Não foram encontrados nomes para esta pesquisa. Experimente outro termo ou filtro.</div>}
-      <StatusBand detail="Os perfis individuais serão atualizados quando houver conteúdos confirmados para publicação." />
+      <p style={{ color: 'var(--muted-ink)', fontSize: 11, marginBottom: 16 }} data-testid="text-company-count">{filtered.length} {filtered.length === 1 ? 'empresa publicada' : 'empresas publicadas'}</p>
+      {companiesQuery.isLoading ? <div className="empty-state" aria-busy="true" data-testid="loading-companies">A carregar diretório institucional…</div>
+        : companiesQuery.isError ? <div className="empty-state" role="alert" data-testid="error-companies">Não foi possível carregar as empresas. <button type="button" className="text-link" onClick={() => companiesQuery.refetch()} data-testid="button-retry-companies">Tentar novamente</button></div>
+          : filtered.length ? <div className="directory-grid">{filtered.map((company, i) => <Link className="directory-card" href={`/empresas/${company.slug}`} key={company.id} data-testid={`company-card-${company.slug}`}><div className="directory-card-top"><span className="company-index">{String(i + 1).padStart(2, '0')}</span><ArrowUpRight size={17} /></div><div><h2>{company.name}</h2><p>{company.sector || 'Perfil institucional'}</p></div></Link>)}</div> : <div className="empty-state" data-testid="empty-company-results">Não existem empresas publicadas para estes critérios.</div>}
     </section>
   </>;
 }
 
 function CompanyDetail({ params }: { params: { slug?: string } }) {
-  const company = companies.find((item) => item.slug === params.slug);
+  const slug = params.slug ?? '';
+  const companyQuery = useGetPublicCompany(slug, { query: { queryKey: getGetPublicCompanyQueryKey(slug), enabled: !!slug } });
+  const company = companyQuery.data;
   usePageMeta(company?.name ?? 'Empresa', `Informação institucional sobre ${company?.name ?? 'a empresa indicada'}.`);
-  if (!company) return <NotFound />;
+  if (companyQuery.isLoading) return <section className="wrap content-section"><div className="empty-state" aria-busy="true">A carregar perfil institucional…</div></section>;
+  if (companyQuery.isError || !company) return <section className="wrap content-section"><div className="empty-state" role="alert">Este perfil não está publicado ou não foi possível carregá-lo. <Link href="/empresas" className="text-link">Voltar ao diretório</Link></div></section>;
   return <>
     <section className="page-hero"><div className="wrap fade-in"><div className="detail-top"><Link href="/empresas" className="text-link" style={{ border: 0 }} data-testid="link-back-companies"><ArrowLeft size={14} /> Empresas</Link><span>/</span><span>Perfil</span></div><Eyebrow>Diretório de empresas</Eyebrow><h1 className="page-title">{company.name}</h1><p className="page-lead">Perfil institucional</p></div></section>
-    <section className="content-section wrap"><div className="detail-panel"><span className="status-pill">{pending}</span><h2 style={{ marginTop: 23 }}>Perfil em preparação</h2><p className="body-copy">Não foram disponibilizadas informações institucionais adicionais sobre esta entidade. Este perfil será atualizado quando existirem conteúdos confirmados para publicação.</p></div><div className="fact-table" style={{ marginTop: 50 }}><dl className="fact-row"><dt>Nome indicado</dt><dd>{company.name}</dd></dl><dl className="fact-row"><dt>Descrição</dt><dd>{pending}</dd></dl><dl className="fact-row"><dt>Informação de contacto</dt><dd>{pending}</dd></dl></div></section>
+    <section className="content-section wrap"><div className="detail-panel"><span className="status-pill">{company.sector || 'Empresa do grupo'}</span><h2 style={{ marginTop: 23 }}>{company.name}</h2><p className="body-copy">{company.description || 'Descrição institucional não disponibilizada.'}</p>{company.services && <p className="body-copy"><strong>Serviços</strong><br />{company.services}</p>}</div><div className="fact-table" style={{ marginTop: 50 }}><dl className="fact-row"><dt>Nome</dt><dd>{company.name}</dd></dl><dl className="fact-row"><dt>Sector</dt><dd>{company.sector || 'Não disponibilizado'}</dd></dl><dl className="fact-row"><dt>Website oficial</dt><dd>{company.officialWebsite ? <a href={company.officialWebsite} target="_blank" rel="noreferrer">{company.officialWebsite}</a> : 'Não disponibilizado'}</dd></dl></div></section>
   </>;
 }
 
@@ -257,16 +279,31 @@ function Publications() {
   usePageMeta('Publicações', 'Pesquisa de publicações institucionais do Grupo KYS CORP LDA.');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('Todas as categorias');
-  const [submitted, setSubmitted] = useState(false);
-  function onSearch(e: FormEvent<HTMLFormElement>) { e.preventDefault(); setSubmitted(true); }
+  const params = { ...(search.trim() ? { search: search.trim() } : {}), ...(category !== 'Todas as categorias' ? { category } : {}), page: 1, pageSize: 20 };
+  const publicationQuery = useListPublications(params);
+  const items = publicationQuery.data?.items ?? [];
   return <>
-    <PageHero eyebrow="Publicações / arquivo" title="Publicações" lead="Pesquise comunicados, documentos e outros conteúdos institucionais. Ainda não existem publicações disponibilizadas neste portal." />
-    <section className="content-section wrap"><form className="publication-tools" onSubmit={onSearch} role="search">
+    <PageHero eyebrow="Publicações / arquivo" title="Publicações" lead="Pesquise comunicados, documentos e outros conteúdos institucionais publicados pelo Grupo KYS CORP LDA." />
+    <section className="content-section wrap"><form className="publication-tools" onSubmit={(e) => e.preventDefault()} role="search">
       <label className="search-box"><Search size={16} /><input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Pesquisar publicações" aria-label="Pesquisar publicações" data-testid="input-publication-search" /></label>
-      <select className="filter-select" value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Filtrar por categoria" data-testid="select-publication-category"><option>Todas as categorias</option><option>Comunicados</option><option>Documentos</option><option>Notícias</option></select>
-      <button className="button-primary" type="submit" data-testid="button-search-publications">Pesquisar <ArrowRight size={14} /></button>
-    </form><div className="empty-state" data-testid="empty-publications"><FileText size={20} style={{ marginBottom: 15 }} /><strong style={{ display: 'block', color: 'var(--ink)', font: '600 17px Manrope', marginBottom: 7 }}>Ainda sem publicações</strong>{submitted && (search || category !== 'Todas as categorias') ? 'A pesquisa foi aplicada. Não existem conteúdos publicados que correspondam aos critérios.' : 'Quando existirem conteúdos institucionais publicados, serão apresentados aqui.'}</div></section>
+      <select className="filter-select" value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Filtrar por categoria" data-testid="select-publication-category"><option>Todas as categorias</option>{Array.from(new Set((publicationQuery.data?.items ?? []).map((item) => item.category))).map((v) => <option key={v}>{v}</option>)}</select>
+    </form>
+    {publicationQuery.isLoading ? <div className="empty-state" aria-busy="true" data-testid="loading-publications">A carregar publicações…</div>
+      : publicationQuery.isError ? <div className="empty-state" role="alert" data-testid="error-publications">Não foi possível carregar publicações. <button className="text-link" type="button" onClick={() => publicationQuery.refetch()} data-testid="button-retry-publications">Tentar novamente</button></div>
+        : items.length ? <div className="publication-list" data-testid="list-publications">{items.map((item) => <Link className="publication-row" href={`/publicacoes/${item.slug}`} key={item.id} data-testid={`publication-${item.slug}`}><div><span className="eyebrow">{item.category}</span><h2>{item.title}</h2><p>{item.publishedAt ? new Date(item.publishedAt).toLocaleDateString('pt-PT') : ''}{item.author ? ` · ${item.author}` : ''}</p></div><ArrowUpRight size={18} /></Link>)}</div>
+          : <div className="empty-state" data-testid="empty-publications"><FileText size={20} style={{ marginBottom: 15 }} /><strong style={{ display: 'block', color: 'var(--ink)', font: '600 17px Manrope', marginBottom: 7 }}>Ainda sem publicações</strong>Quando existirem conteúdos institucionais publicados, serão apresentados aqui.</div>}
+    </section>
   </>;
+}
+
+function PublicationDetail({ params }: { params: { slug?: string } }) {
+  const slug = params.slug ?? '';
+  const articleQuery = useGetPublicationsBySlug(slug, { query: { queryKey: getGetPublicationsBySlugQueryKey(slug), enabled: !!slug } });
+  const article = articleQuery.data;
+  usePageMeta(article?.title ?? 'Publicação', article?.seoDescription ?? 'Publicação institucional do Grupo KYS CORP LDA.');
+  if (articleQuery.isLoading) return <section className="wrap content-section"><div className="empty-state" aria-busy="true">A carregar publicação…</div></section>;
+  if (articleQuery.isError || !article) return <section className="wrap content-section"><div className="empty-state" role="alert">Publicação indisponível. <Link className="text-link" href="/publicacoes">Voltar às publicações</Link></div></section>;
+  return <article className="wrap publication-detail content-section"><Link href="/publicacoes" className="text-link" data-testid="link-back-publications"><ArrowLeft size={14} /> Publicações</Link><Eyebrow>{article.category}</Eyebrow><h1 className="page-title">{article.title}</h1><p className="page-lead">{article.author || ''}{article.publishedAt ? ` · ${new Date(article.publishedAt).toLocaleDateString('pt-PT')}` : ''}</p>{article.imageUrl && <img src={article.imageUrl} alt="" className="publication-image" />}<div className="publication-content">{article.content}</div></article>;
 }
 
 function Information() {
@@ -281,17 +318,48 @@ function Information() {
 
 function Contacts() {
   usePageMeta('Contactos', 'Categorias de contacto e formulário institucional do Grupo KYS CORP LDA.');
+  const createInquiry = useCreateContactInquiry();
+  const [success, setSuccess] = useState('');
+  const [failure, setFailure] = useState('');
+  function submitContact(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const contactForm = event.currentTarget;
+    setSuccess('');
+    setFailure('');
+    const form = new FormData(event.currentTarget);
+    const categoryMap: Record<string, 'general' | 'press' | 'partnerships' | 'other'> = {
+      general: 'general', press: 'press', partnerships: 'partnerships', other: 'other',
+    };
+    createInquiry.mutate({ data: {
+      name: String(form.get('name') || '').trim(),
+      email: String(form.get('email') || '').trim(),
+      category: categoryMap[String(form.get('category'))] || 'general',
+      message: String(form.get('message') || '').trim(),
+      website: String(form.get('website') || ''),
+    } }, {
+      onSuccess: (receipt) => {
+        if (receipt.received) {
+          setSuccess('A sua mensagem foi recebida. Obrigado pelo contacto.');
+          contactForm.reset();
+        } else setFailure('Não foi possível confirmar a receção. Tente novamente.');
+      },
+      onError: () => setFailure('O envio falhou. A mensagem não foi submetida; tente novamente mais tarde.'),
+    });
+  }
   return <>
     <PageHero eyebrow="Contactos / comunicação" title="Contactos" lead="Este espaço apresenta as categorias de contacto previstas. Os dados de contacto ainda não foram publicados." />
     <section className="content-section wrap"><div className="contact-layout"><div><Eyebrow>Canais institucionais</Eyebrow><h2 className="section-title" style={{ fontSize: 34 }}>Fale com a equipa.</h2><p className="body-copy">Os canais oficiais serão publicados quando estiverem disponíveis.</p><div className="contact-categories">{['Informação geral', 'Imprensa e comunicação', 'Parcerias', 'Outros assuntos'].map((item) => <div className="contact-category" key={item}><span>{item}</span><span className="status-pill">{pending}</span></div>)}</div><StatusBand title="Contactos não publicados" detail="Não estão disponíveis endereço, telefone ou correio eletrónico institucional." /></div>
-      <form className="contact-form" onSubmit={(e) => e.preventDefault()} data-testid="form-contact">
+      <form className="contact-form" onSubmit={submitContact} data-testid="form-contact">
         <Eyebrow>Formulário de contacto</Eyebrow>
-        <label>Nome<input name="name" type="text" autoComplete="name" placeholder="O seu nome" data-testid="input-contact-name" /></label>
-        <label>Correio eletrónico<input name="email" type="email" autoComplete="email" placeholder="nome@exemplo.com" data-testid="input-contact-email" /></label>
-        <label>Assunto<select name="subject" defaultValue="" data-testid="select-contact-subject"><option value="" disabled>Selecione uma categoria</option><option>Informação geral</option><option>Imprensa e comunicação</option><option>Parcerias</option><option>Outro assunto</option></select></label>
-        <label>Mensagem<textarea name="message" placeholder="Escreva a sua mensagem" data-testid="textarea-contact-message" /></label>
-        <button className="button-primary" type="button" disabled style={{ opacity: .55, cursor: 'not-allowed' }} data-testid="button-contact-submit">Envio ainda não disponível <ArrowRight size={14} /></button>
-        <p className="form-note">O formulário é apresentado como interface demonstrativa. Não existe um canal de envio configurado e nenhuma mensagem será transmitida.</p>
+        <label>Nome<input name="name" type="text" minLength={2} maxLength={120} required autoComplete="name" placeholder="O seu nome" data-testid="input-contact-name" /></label>
+        <label>Correio eletrónico<input name="email" type="email" maxLength={254} required autoComplete="email" placeholder="nome@exemplo.com" data-testid="input-contact-email" /></label>
+        <label>Assunto<select name="category" defaultValue="general" required data-testid="select-contact-subject"><option value="general">Informação geral</option><option value="press">Imprensa e comunicação</option><option value="partnerships">Parcerias</option><option value="other">Outro assunto</option></select></label>
+        <label>Mensagem<textarea name="message" minLength={10} maxLength={5000} required placeholder="Escreva a sua mensagem" data-testid="textarea-contact-message" /></label>
+        <label className="honeypot" aria-hidden="true">Website<input name="website" tabIndex={-1} autoComplete="off" data-testid="input-contact-website" /></label>
+        {success && <p role="status" className="form-feedback success" data-testid="status-contact-success">{success}</p>}
+        {failure && <p role="alert" className="form-feedback error" data-testid="status-contact-error">{failure}</p>}
+        <button className="button-primary" type="submit" disabled={createInquiry.isPending} data-testid="button-contact-submit">{createInquiry.isPending ? 'A enviar…' : 'Enviar mensagem'} <ArrowRight size={14} /></button>
+        <p className="form-note">Os dados fornecidos serão utilizados apenas para analisar e responder ao seu pedido. Não inclua informação confidencial. O envio só será confirmado após resposta positiva do sistema.</p>
       </form>
     </div></section>
   </>;
@@ -304,13 +372,20 @@ function CustomNotFound() {
 
 function Router() {
   return <RoutedErrorBoundary><Switch>
+    <Route path="/sign-in/*?"><div className="auth-page"><SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} /></div></Route>
+    <Route path="/sign-up/*?"><div className="auth-page"><SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} /></div></Route>
     <Route path="/" component={Home} />
+    <Route path="/admin" component={AdminArea} />
+    <Route path="/admin/empresas" component={AdminArea} />
+    <Route path="/admin/publicacoes" component={AdminArea} />
+    <Route path="/admin/contactos" component={AdminArea} />
     <Route path="/sobre" component={About} />
     <Route path="/empresas" component={Companies} />
     <Route path="/empresas/:slug">{(params) => <CompanyDetail params={params} />}</Route>
     <Route path="/estrutura" component={Structure} />
     <Route path="/governanca" component={Governance} />
     <Route path="/publicacoes" component={Publications} />
+    <Route path="/publicacoes/:slug">{(params) => <PublicationDetail params={params} />}</Route>
     <Route path="/informacoes" component={Information} />
     <Route path="/contactos" component={Contacts} />
     <Route component={CustomNotFound} />
@@ -322,6 +397,16 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
 }
 
+function ClerkBridge({ children }: { children: ReactNode }) {
+  const [, setLocation] = useLocation();
+  return <ClerkProvider publishableKey={clerkPubKey} proxyUrl={clerkProxyUrl}
+    appearance={{ theme: shadcn, cssLayerName: 'clerk', options: { logoPlacement: 'inside', logoLinkUrl: basePath || '/', logoImageUrl: `${window.location.origin}${basePath}/logo.svg` }, variables: { colorPrimary: '#252626', colorForeground: '#242525', colorMutedForeground: '#737573', colorDanger: '#873d3d', colorBackground: '#f8f8f5', colorInput: '#fbfbf9', colorInputForeground: '#242525', colorNeutral: '#d9d9d5', fontFamily: 'DM Sans', borderRadius: '0px' } }}
+    signInUrl={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`}
+    routerPush={(to) => setLocation(stripBase(to))}
+    routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
+  >{children}</ClerkProvider>;
+}
+
 function App() {
   const [dark, setDark] = useState(() => {
     try { return localStorage.getItem('kyscorp-theme') === 'dark'; } catch { return false; }
@@ -331,7 +416,7 @@ function App() {
     try { localStorage.setItem('kyscorp-theme', dark ? 'dark' : 'light'); } catch { /* Storage is optional. */ }
   }, [dark]);
   const toggleTheme = () => setDark((value) => !value);
-  return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><SiteLayout dark={dark} onToggle={toggleTheme}><Router /></SiteLayout></WouterRouter><Toaster /></TooltipProvider></QueryClientProvider>;
+  return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={basePath}><ClerkBridge><SiteLayout dark={dark} onToggle={toggleTheme}><Router /></SiteLayout></ClerkBridge></WouterRouter><Toaster /></TooltipProvider></QueryClientProvider>;
 }
 
 export default App;

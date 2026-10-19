@@ -3,20 +3,22 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Public portal and content-management API for KYS CORP
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: companies
+  - name: publications
+  - name: contacts
+  - name: administration
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +26,460 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /companies:
+    get:
+      operationId: listPublicCompanies
+      tags: [companies]
+      summary: List published companies
+      responses:
+        "200":
+          description: Published company profiles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Company"
+  /companies/{slug}:
+    get:
+      operationId: getPublicCompany
+      tags: [companies]
+      summary: Get a published company by slug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Company profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Company"
+        "404": { description: Company not found }
+  /publications:
+    get:
+      operationId: listPublications
+      tags: [publications]
+      summary: Search and paginate published articles
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: category
+          in: query
+          schema: { type: string }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 10 }
+      responses:
+        "200":
+          description: Published page of articles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicationPage"
+  /publications/{slug}:
+    get:
+      operationId: getPublicationsBySlug
+      tags: [publications]
+      summary: Get a published article
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Article
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Publication"
+        "404": { description: Publication not found }
+  /contact-inquiries:
+    post:
+      operationId: createContactInquiry
+      tags: [contacts]
+      summary: Submit a contact message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactInquiryInput"
+      responses:
+        "201":
+          description: Message stored for administrator review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactReceipt"
+        "400": { description: Invalid message }
+        "429": { description: Too many requests }
+  /admin/session:
+    get:
+      operationId: getAdminSession
+      tags: [administration]
+      summary: Check the current administrator's role
+      responses:
+        "200":
+          description: Administrator session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+        "401": { description: Sign in required }
+        "403": { description: Administrator access required }
+  /admin/overview:
+    get:
+      operationId: getAdminOverview
+      tags: [administration]
+      summary: Get portal content counts
+      responses:
+        "200":
+          description: Overview counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOverview"
+        "401": { description: Sign in required }
+        "403": { description: Administrator access required }
+  /admin/companies:
+    get:
+      operationId: listAdminCompanies
+      tags: [administration]
+      summary: List all companies
+      responses:
+        "200":
+          description: Company records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Company"
+    post:
+      operationId: createAdminCompany
+      tags: [administration]
+      summary: Create a company
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompanyInput"
+      responses:
+        "201":
+          description: Created company
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Company"
+        "400": { description: Invalid company }
+        "409": { description: Slug already exists }
+  /admin/companies/{id}:
+    patch:
+      operationId: updateAdminCompany
+      tags: [administration]
+      summary: Update a company
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompanyUpdate"
+      responses:
+        "200":
+          description: Updated company
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Company"
+        "404": { description: Company not found }
+    delete:
+      operationId: archiveAdminCompany
+      tags: [administration]
+      summary: Archive a company without deleting its record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204": { description: Company archived }
+        "404": { description: Company not found }
+  /admin/publications:
+    get:
+      operationId: listAdminPublications
+      tags: [administration]
+      summary: List all publication drafts and published entries
+      responses:
+        "200":
+          description: Publication records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Publication"
+    post:
+      operationId: createAdminPublication
+      tags: [administration]
+      summary: Create a publication draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicationInput"
+      responses:
+        "201":
+          description: Created publication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Publication"
+        "409": { description: Slug already exists }
+  /admin/publications/{id}:
+    patch:
+      operationId: updateAdminPublication
+      tags: [administration]
+      summary: Edit or publish a publication
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicationUpdate"
+      responses:
+        "200":
+          description: Updated publication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Publication"
+        "404": { description: Publication not found }
+    delete:
+      operationId: archiveAdminPublication
+      tags: [administration]
+      summary: Archive a publication without deleting its record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204": { description: Publication archived }
+        "404": { description: Publication not found }
+  /admin/inquiries:
+    get:
+      operationId: listAdminInquiries
+      tags: [administration]
+      summary: List submitted contact messages
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [new, reviewed, archived]
+      responses:
+        "200":
+          description: Contact messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ContactInquiry"
+  /admin/inquiries/{id}:
+    patch:
+      operationId: updateAdminInquiry
+      tags: [administration]
+      summary: Change a message's review status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactInquiryUpdate"
+      responses:
+        "200":
+          description: Updated message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactInquiry"
+        "404": { description: Message not found }
 components:
   schemas:
     HealthStatus:
       type: object
       properties:
-        status:
-          type: string
-      required:
-        - status
-
+        status: { type: string }
+      required: [status]
+    Company:
+      type: object
+      required: [id, name, slug, status, sortOrder, createdAt, updatedAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: ["string", "null"] }
+        sector: { type: ["string", "null"] }
+        services: { type: ["string", "null"] }
+        logoUrl: { type: ["string", "null"], format: uri }
+        officialWebsite: { type: ["string", "null"], format: uri }
+        status: { type: string, enum: [draft, published, archived] }
+        sortOrder: { type: integer }
+        seoTitle: { type: ["string", "null"] }
+        seoDescription: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CompanyInput:
+      type: object
+      required: [name, slug]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        slug: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        description: { type: ["string", "null"], maxLength: 5000 }
+        sector: { type: ["string", "null"], maxLength: 120 }
+        services: { type: ["string", "null"], maxLength: 3000 }
+        logoUrl: { type: ["string", "null"], format: uri }
+        officialWebsite: { type: ["string", "null"], format: uri }
+        status: { type: string, enum: [draft, published, archived], default: draft }
+        sortOrder: { type: integer, default: 0 }
+        seoTitle: { type: ["string", "null"], maxLength: 160 }
+        seoDescription: { type: ["string", "null"], maxLength: 320 }
+    CompanyUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        slug: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        description: { type: ["string", "null"], maxLength: 5000 }
+        sector: { type: ["string", "null"], maxLength: 120 }
+        services: { type: ["string", "null"], maxLength: 3000 }
+        logoUrl: { type: ["string", "null"], format: uri }
+        officialWebsite: { type: ["string", "null"], format: uri }
+        status: { type: string, enum: [draft, published, archived] }
+        sortOrder: { type: integer }
+        seoTitle: { type: ["string", "null"], maxLength: 160 }
+        seoDescription: { type: ["string", "null"], maxLength: 320 }
+    Publication:
+      type: object
+      required: [id, title, slug, category, content, status, createdAt, updatedAt]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        slug: { type: string }
+        imageUrl: { type: ["string", "null"], format: uri }
+        author: { type: ["string", "null"] }
+        category: { type: string }
+        content: { type: string }
+        status: { type: string, enum: [draft, published, archived] }
+        publishedAt: { type: ["string", "null"], format: date-time }
+        seoTitle: { type: ["string", "null"] }
+        seoDescription: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    PublicationInput:
+      type: object
+      required: [title, slug, category, content]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        slug: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        imageUrl: { type: ["string", "null"], format: uri }
+        author: { type: ["string", "null"], maxLength: 120 }
+        category: { type: string, minLength: 1, maxLength: 80 }
+        content: { type: string, maxLength: 50000 }
+        status: { type: string, enum: [draft, published, archived], default: draft }
+        publishedAt: { type: ["string", "null"], format: date-time }
+        seoTitle: { type: ["string", "null"], maxLength: 160 }
+        seoDescription: { type: ["string", "null"], maxLength: 320 }
+    PublicationUpdate:
+      type: object
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        slug: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        imageUrl: { type: ["string", "null"], format: uri }
+        author: { type: ["string", "null"], maxLength: 120 }
+        category: { type: string, minLength: 1, maxLength: 80 }
+        content: { type: string, maxLength: 50000 }
+        status: { type: string, enum: [draft, published, archived] }
+        publishedAt: { type: ["string", "null"], format: date-time }
+        seoTitle: { type: ["string", "null"], maxLength: 160 }
+        seoDescription: { type: ["string", "null"], maxLength: 320 }
+    PublicationPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Publication" }
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
+    ContactInquiryInput:
+      type: object
+      required: [name, email, category, message]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 120 }
+        email: { type: string, format: email, maxLength: 254 }
+        category: { type: string, enum: [general, press, partnerships, other] }
+        message: { type: string, minLength: 10, maxLength: 5000 }
+        website: { type: string, maxLength: 200, description: Honeypot field; must remain empty }
+    ContactInquiry:
+      type: object
+      required: [id, name, email, category, message, status, createdAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string }
+        category: { type: string }
+        message: { type: string }
+        status: { type: string, enum: [new, reviewed, archived] }
+        createdAt: { type: string, format: date-time }
+    ContactInquiryUpdate:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [new, reviewed, archived] }
+    ContactReceipt:
+      type: object
+      required: [id, received]
+      properties:
+        id: { type: integer }
+        received: { type: boolean }
+    AdminSession:
+      type: object
+      required: [email, role]
+      properties:
+        email: { type: string, format: email }
+        role: { type: string, enum: [super_admin, editor] }
+    AdminOverview:
+      type: object
+      required: [companies, drafts, publications, newInquiries]
+      properties:
+        companies: { type: integer }
+        drafts: { type: integer }
+        publications: { type: integer }
+        newInquiries: { type: integer }
